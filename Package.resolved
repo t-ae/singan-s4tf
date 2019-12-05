@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Swim",
+        "repositoryURL": "https://github.com/t-ae/swim.git",
+        "state": {
+          "branch": null,
+          "revision": "6c89c2f16c83c5cd2509d499e9b3d41e65d776b8",
+          "version": "3.6.0"
+        }
+      },
+      {
+        "package": "TensorBoardX",
+        "repositoryURL": "https://github.com/t-ae/tensorboardx-s4tf.git",
+        "state": {
+          "branch": null,
+          "revision": "2e65acf5ecf23f8d24c4f1d53a3f59286ae488c8",
+          "version": "0.0.4"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
