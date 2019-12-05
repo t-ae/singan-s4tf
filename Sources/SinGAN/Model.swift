@@ -1,9 +1,9 @@
 import TensorFlow
 
 func resizeBilinear(images: Tensor<Float>, newSize: Size) -> Tensor<Float> {
-    return _Raw.resizeBilinear(images: images,
-                               size: Tensor([Int32(newSize.height), Int32(newSize.width)]),
-                               alignCorners: true)
+    _Raw.resizeBilinear(images: images,
+                        size: Tensor([Int32(newSize.height), Int32(newSize.width)]),
+                        alignCorners: true)
 }
 
 struct ConvBlock: Layer {

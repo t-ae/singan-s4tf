@@ -12,8 +12,10 @@ enum Config {
     static let imageMaxSize = 250
     
     // training params
-    static let trainStepsPerLayer = 3000
+    static let trainEpochsPerLayer = 3000
     static let alpha: Float = 50
+    static let genIter = 3
+    static let discIter = 3
     
     // test configuration
     static let superResolutionIter = 8
