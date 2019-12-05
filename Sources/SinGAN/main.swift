@@ -2,8 +2,10 @@ import Foundation
 import TensorFlow
 import TensorBoardX
 
-let imageURL = URL(fileURLWithPath: "/Users/araki/Desktop/t-ae/SinGAN/Input/Images/balloons.png")
+let imageURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[1])
+print("Image: \(imageURL)")
 let reals = try ImagePyramid.load(file: imageURL)
+
 
 var genStack: [Generator] = []
 
@@ -37,13 +39,13 @@ func generateThroughGenStack(
 }
 
 func trainSingleScale() {
+    Context.local.learningPhase = .training
     let layer = genStack.count
     let tag = "layer\(layer)"
-    let real = reals[layer].expandingShape(at: 0)
+    let real = reals[layer].expandingShape(at: 0) // [1, H, W, C]
     
     // increase this number by a factor of 2 every 4 scales
     let numChannels = Config.baseChannels * (1 << (layer/4))
-    
     var genCurrent = Generator(channels: numChannels)
     var discCurrent = Discriminator(channels: numChannels)
     
@@ -102,6 +104,8 @@ func trainSingleScale() {
         writer.addScalar(tag: "\(tag)/D", scalar: lossDs / Float(Config.discIter), globalStep: i)
     }
     
+    Context.local.learningPhase = .inference
+    
     // plot
     writer.addImage(tag: "\(tag)/real", image: real.squeezingShape())
     do {
@@ -134,6 +138,7 @@ func train() {
 }
 
 func testMultipleScale() {
+    Context.local.learningPhase = .inference
     let initialSizes = [Size(width: 25, height: 25),
                         Size(width: 25, height: 50),
                         Size(width: 40, height: 25)]
@@ -150,12 +155,13 @@ func testMultipleScale() {
 }
 
 func testSuperResolution() {
-    var image = reals.images.last!
+    Context.local.learningPhase = .inference
+    var image = reals.images.last!.expandingShape(at: 0) // [1, H, W, C]
     let gen = genStack.last!
     
     for i in 0..<Config.superResolutionIter {
-        let newSize = Size(width: Int(Float(image.shape[2]) / Config.scaleFactor),
-                           height: Int(Float(image.shape[1]) / Config.scaleFactor))
+        let newSize = Size(width: image.shape[2], height: image.shape[1])
+            .scaled(factor: 1/Config.scaleFactor)
         image = resizeBilinear(images: image, newSize: newSize)
         
         let noise = sampleNoise(image.shape, scale: noiseScales.last!)
