@@ -9,6 +9,8 @@ var genStack: [Generator] = []
 
 let writer = SummaryWriter(logdir: Config.tensorBoardLogDir)
 
+writer.addText(tag: "sizes", text: String(describing: reals.sizes))
+
 func sampleNoise(_ shape: TensorShape, scale: Float = 1.0) -> Tensor<Float> {
     Tensor<Float>(randomNormal: shape)
 }
@@ -37,7 +39,8 @@ func trainSingleScale() {
     let tag = "layer\(layer)"
     let real = reals[layer].expandingShape(at: 0)
     
-    let numChannels = Config.baseChannels * (1 << layer/4)
+    // increase this number by a factor of 2 every 4 scales
+    let numChannels = Config.baseChannels * (1 << (layer/4))
     
     var genCurrent = Generator(channels: numChannels)
     var discCurrent = Discriminator(channels: numChannels)
@@ -114,6 +117,10 @@ func train() {
         print("Start training: layer=\(i)")
         trainSingleScale()
     }
+}
+
+func testMultipleScale() {
+    
 }
 
 func testSuperResolution() {

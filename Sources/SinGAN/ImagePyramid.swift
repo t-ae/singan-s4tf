@@ -2,7 +2,7 @@ import Foundation
 import Swim
 import TensorFlow
 
-struct Size {
+struct Size: CustomStringConvertible {
     var width: Int
     var height: Int
     
@@ -19,6 +19,10 @@ struct Size {
     
     func scaled(factor: Float) -> Size {
         Size(width: Int(Float(width)*factor), height: Int(Float(height)*factor))
+    }
+    
+    var description: String {
+        "\(width)x\(height)"
     }
 }
 
