@@ -16,5 +16,8 @@ enum Config {
     static let alpha: Float = 50
     
     // test configuration
-    static let superResolutionTimes = 4
+    static let superResolutionIter = 8
+    
+    // plot configuration
+    static let tensorBoardLogDir = URL(fileURLWithPath: "/tmp/SinGAN")
 }

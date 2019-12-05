@@ -7,8 +7,7 @@ let reals = try ImagePyramid.load(file: imageURL)
 
 var genStack: [Generator] = []
 
-let writer = SummaryWriter(logdir: URL(fileURLWithPath: "/tmp/SinGAN"))
-writer.addText(tag: "hoge", text: "hoge")
+let writer = SummaryWriter(logdir: Config.tensorBoardLogDir)
 
 func sampleNoise(_ shape: TensorShape, scale: Float = 1.0) -> Tensor<Float> {
     Tensor<Float>(randomNormal: shape)
@@ -114,16 +113,16 @@ func testSuperResolution() {
     var image = reals.images.last!
     let gen = genStack.last!
     
-    for _ in 0..<Config.superResolutionTimes {
+    for i in 0..<Config.superResolutionIter {
         let newSize = Size(width: Int(Float(image.shape[2]) / Config.scaleFactor),
                            height: Int(Float(image.shape[1]) / Config.scaleFactor))
         image = resizeBilinear(images: image, newSize: newSize)
         
         let noise = sampleNoise(image.shape, scale: noiseScales.last!)
         image = gen(.init(image: image, noise: noise))
+        
+        writer.addImage(tag: "SuperResolution", image: image.squeezingShape(), globalStep: i)
     }
-    
-    writer.addImage(tag: "SuperResolution", image: image.squeezingShape())
 }
 
 train()
