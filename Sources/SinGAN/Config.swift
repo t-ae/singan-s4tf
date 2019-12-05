@@ -3,7 +3,7 @@ import Foundation
 enum Config {
     // network params
     static let kernelSize = 3
-    static let intermediateChannels = 32
+    static let baseChannels = 32
     
     // pyramid params
     static let scaleFactor: Float = 0.75

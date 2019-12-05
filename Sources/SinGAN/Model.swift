@@ -38,12 +38,12 @@ struct Generator: Layer {
     var conv3: ConvBlock
     var tail: Conv2D<Float>
     
-    init() {
-        self.head = ConvBlock(inputDim: 3, outputDim: 32)
-        self.conv1 = ConvBlock(inputDim: 32, outputDim: 32)
-        self.conv2 = ConvBlock(inputDim: 32, outputDim: 32)
-        self.conv3 = ConvBlock(inputDim: 32, outputDim: 32)
-        self.tail = Conv2D(filterShape: (3, 3, 32, 3), padding: .same)
+    init(channels: Int) {
+        self.head = ConvBlock(inputDim: 3, outputDim: channels)
+        self.conv1 = ConvBlock(inputDim: channels, outputDim: channels)
+        self.conv2 = ConvBlock(inputDim: channels, outputDim: channels)
+        self.conv3 = ConvBlock(inputDim: channels, outputDim: channels)
+        self.tail = Conv2D(filterShape: (3, 3, channels, 3), padding: .same)
     }
     
     @differentiable
@@ -66,12 +66,12 @@ struct Discriminator: Layer {
     var conv3: ConvBlock
     var tail: Conv2D<Float>
     
-    init() {
-        self.head = ConvBlock(inputDim: 3, outputDim: 32)
-        self.conv1 = ConvBlock(inputDim: 32, outputDim: 32)
-        self.conv2 = ConvBlock(inputDim: 32, outputDim: 32)
-        self.conv3 = ConvBlock(inputDim: 32, outputDim: 32)
-        self.tail = Conv2D(filterShape: (3, 3, 32, 1), padding: .same)
+    init(channels: Int) {
+        self.head = ConvBlock(inputDim: 3, outputDim: channels)
+        self.conv1 = ConvBlock(inputDim: channels, outputDim: channels)
+        self.conv2 = ConvBlock(inputDim: channels, outputDim: channels)
+        self.conv3 = ConvBlock(inputDim: channels, outputDim: channels)
+        self.tail = Conv2D(filterShape: (3, 3, channels, 1), padding: .same)
     }
     
     @differentiable

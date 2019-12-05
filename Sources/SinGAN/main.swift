@@ -34,13 +34,16 @@ func generateThroughGenStack(noises: [Tensor<Float>]? = nil) -> Tensor<Float> {
 
 func trainSingleScale() {
     let layer = genStack.count
+    let tag = "layer\(layer)"
     let real = reals[layer].expandingShape(at: 0)
     
-    var genCurrent = Generator()
-    var discCurrent = Discriminator()
+    let numChannels = Config.baseChannels * (1 << layer/4)
     
-    let optG = Adam(for: genCurrent)
-    let optD = Adam(for: discCurrent)
+    var genCurrent = Generator(channels: numChannels)
+    var discCurrent = Discriminator(channels: numChannels)
+    
+    let optG = Adam(for: genCurrent, learningRate: 5e-4, beta1: 0.5, beta2: 0.999)
+    let optD = Adam(for: discCurrent, learningRate: 5e-4, beta1: 0.5, beta2: 0.999)
     
     var noiseScale: Float = 1.0
     
@@ -52,7 +55,7 @@ func trainSingleScale() {
         let noise = sampleNoise(image.shape, scale: noiseScale)
         
         // Train generator
-        let gg = genCurrent.gradient { genCurrent -> Tensor<Float> in
+        let (lossG, 𝛁gen) = genCurrent.valueWithGradient { genCurrent -> Tensor<Float> in
             let fake = genCurrent(.init(image: image, noise: noise))
             let score = discCurrent(fake).mean()
             let loss = pow(score - 1, 2)
@@ -66,21 +69,23 @@ func trainSingleScale() {
             
             return loss + Config.alpha * reconLoss
         }
-        optG.update(&genCurrent, along: gg)
+        optG.update(&genCurrent, along: 𝛁gen)
         
         // Train discriminator
-        let gd = discCurrent.gradient { discCurrent -> Tensor<Float> in
+        let (lossD, 𝛁dis) = discCurrent.valueWithGradient { discCurrent -> Tensor<Float> in
             let fake = genCurrent(.init(image: image, noise: noise))
             let fakeScore = discCurrent(fake).mean()
             let realScore = discCurrent(real).mean()
             let loss = pow(fakeScore, 2) + pow(realScore-1, 2)
             return loss
         }
-        optD.update(&discCurrent, along: gd)
+        optD.update(&discCurrent, along: 𝛁dis)
+        
+        writer.addScalar(tag: "\(tag)/G", scalar: lossG.scalarized(), globalStep: i)
+        writer.addScalar(tag: "\(tag)/D", scalar: lossD.scalarized(), globalStep: i)
     }
     
     // plot
-    let tag = "layer\(layer)"
     writer.addImage(tag: "\(tag)/real", image: real.squeezingShape())
     do {
         var image = generateThroughGenStack()
@@ -100,6 +105,8 @@ func trainSingleScale() {
     genStack.append(genCurrent)
     
     noiseScales[layer] = noiseScale
+    
+    print(noiseScales)
 }
 
 func train() {
