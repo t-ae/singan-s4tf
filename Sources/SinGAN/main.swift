@@ -55,13 +55,12 @@ func trainSingleScale() {
     for i in 0..<Config.trainEpochsPerLayer {
         print("Epoch: \(i) noiseScale=\(noiseScale)")
         
-        // Inputs
-        let image = generateThroughGenStack(sizes: reals.sizes)
         let reconImage = generateThroughGenStack(sizes: reals.sizes, noises: noiseOpt)
         
         // Train discriminator
         var lossDs: Float = 0
         for _ in 0..<Config.discIter {
+            let image = generateThroughGenStack(sizes: reals.sizes)
             let noise = sampleNoise(image.shape, scale: noiseScale)
             
             let (lossD, 𝛁dis) = discCurrent.valueWithGradient { discCurrent -> Tensor<Float> in
@@ -78,6 +77,7 @@ func trainSingleScale() {
         // Train generator
         var lossGs: Float = 0
         for _ in 0..<Config.genIter {
+            let image = generateThroughGenStack(sizes: reals.sizes)
             let noise = sampleNoise(image.shape, scale: noiseScale)
             
             let (lossG, 𝛁gen) = genCurrent.valueWithGradient { genCurrent -> Tensor<Float> in
