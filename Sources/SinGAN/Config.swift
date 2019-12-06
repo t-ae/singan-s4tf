@@ -12,7 +12,7 @@ enum Config {
     static let imageMaxSize = 250
     
     // training params
-    static let trainEpochsPerLayer = 3000
+    static let trainEpochsPerLayer = 2000
     static let alpha: Float = 50
     static let genIter = 3
     static let discIter = 3
@@ -21,5 +21,5 @@ enum Config {
     static let superResolutionIter = 5
     
     // plot configuration
-    static let tensorBoardLogDir = URL(fileURLWithPath: "/tmp/SinGAN")
+    static let tensorBoardLogDir = URL(fileURLWithPath: "./logdir")
 }
