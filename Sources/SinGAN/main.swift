@@ -3,21 +3,30 @@ import TensorFlow
 import TensorBoardX
 
 let imageURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[1])
+//let imageURL = URL(fileURLWithPath: "/Users/araki/Desktop/t-ae/SinGAN/Input/Images/33039_LR.png")
 print("Image: \(imageURL)")
 let reals = try ImagePyramid.load(file: imageURL)
 
-
 var genStack: [Generator] = []
+var discStack: [Discriminator] = []
+
+let zeropad = ZeroPadding2D<Float>(padding: (5, 5))
 
 let writer = SummaryWriter(logdir: Config.tensorBoardLogDir)
 writer.addText(tag: "sizes", text: String(describing: reals.sizes))
+func writeImage(tag: String, image: Tensor<Float>, globalStep: Int = 0) {
+    var image = image.squeezingShape()
+    image = (image + 1) / 2
+    writer.addImage(tag: tag, image: image, globalStep: globalStep)
+}
 
 func sampleNoise(_ shape: TensorShape, scale: Float = 1.0) -> Tensor<Float> {
     Tensor<Float>(randomNormal: shape)
 }
 
-let noiseOpt = [sampleNoise(reals[0].shape)] + reals.images[1...].map { Tensor<Float>(zeros: $0.shape) }
-var noiseScales = noiseOpt.map { _ in 1.0 as Float }
+let noiseOpt = [zeropad(sampleNoise(reals[0].shape))]
+    + reals.images[1...].map { zeropad(Tensor<Float>(zeros: $0.shape)) }
+var noiseScales = [Float]()
 
 func generateThroughGenStack(
     sizes: [Size],
@@ -26,8 +35,9 @@ func generateThroughGenStack(
     var image = Tensor<Float>(zeros: [1, sizes[0].height, sizes[0].width, 3])
     
     for (i, gen) in genStack.enumerated() {
-        let noise = noises?[i] ?? sampleNoise(image.shape, scale: noiseScales[i])
-        image = gen(.init(image: image, noise: noise))
+        let img = zeropad(image)
+        let noise = noises?[i] ?? sampleNoise(img.shape, scale: noiseScales[i])
+        image = gen(.init(image: img, noise: noise))
         
         if i+1 < sizes.count {
             let nextSize = sizes[i+1]
@@ -42,91 +52,114 @@ func trainSingleScale() {
     Context.local.learningPhase = .training
     let layer = genStack.count
     let tag = "layer\(layer)"
-    let real = reals[layer].expandingShape(at: 0) // [1, H, W, C]
+    let real = reals[layer] // [1, H, W, C]
+    writeImage(tag: "\(tag)/real", image: real.squeezingShape())
     
-    // increase this number by a factor of 2 every 4 scales
-    let numChannels = Config.baseChannels * (1 << (layer/4))
-    var genCurrent = Generator(channels: numChannels)
-    var discCurrent = Discriminator(channels: numChannels)
+    var genCurrent: Generator
+    var discCurrent: Discriminator
+    
+    if layer == 0 {
+        genCurrent = Generator(channels: Config.baseChannels)
+        discCurrent = Discriminator(channels: Config.baseChannels)
+    } else {
+        // Copy from previous
+        genCurrent = genStack.last!
+        discCurrent = discStack.last!
+    }
     
     let optG = Adam(for: genCurrent, learningRate: 5e-4, beta1: 0.5, beta2: 0.999)
     let optD = Adam(for: discCurrent, learningRate: 5e-4, beta1: 0.5, beta2: 0.999)
     
-    var noiseScale: Float = 1.0
+    let noiseScale: Float
+    if layer == 0 {
+        noiseScale = 1
+    } else {
+        let recon = generateThroughGenStack(sizes: reals.sizes, noises: noiseOpt)
+        let rmse = sqrt((pow((recon - real), 2)).mean())
+        noiseScale = Config.noiseScaleBase * rmse.scalarized()
+    }
     
-    for i in 0..<Config.trainEpochsPerLayer {
-        print("Epoch: \(i) noiseScale=\(noiseScale)")
-        
-        let reconImage = generateThroughGenStack(sizes: reals.sizes, noises: noiseOpt)
-        
-        // Train discriminator
-        var lossDs: Float = 0
-        for _ in 0..<Config.discIter {
-            let image = generateThroughGenStack(sizes: reals.sizes)
-            let noise = sampleNoise(image.shape, scale: noiseScale)
-            
-            let (lossD, 𝛁dis) = discCurrent.valueWithGradient { discCurrent -> Tensor<Float> in
-                let fake = genCurrent(.init(image: image, noise: noise))
-                let fakeScore = discCurrent(fake).mean()
-                let realScore = discCurrent(real).mean()
-                let loss = pow(fakeScore, 2) + pow(realScore-1, 2)
-                return loss
-            }
-            optD.update(&discCurrent, along: 𝛁dis)
-            lossDs += lossD.scalarized()
+    let steps = Config.trainEpochsPerLayer * Config.nDisUpdate
+    
+    for step in 0..<steps {
+        if step % 10 == 0 {
+            print("Epoch: \(step) noiseScale=\(noiseScale)")
         }
         
-        // Train generator
-        var lossGs: Float = 0
-        for _ in 0..<Config.genIter {
-            let image = generateThroughGenStack(sizes: reals.sizes)
+        let reconImage = zeropad(generateThroughGenStack(sizes: reals.sizes, noises: noiseOpt))
+        let image = zeropad(generateThroughGenStack(sizes: reals.sizes))
+        
+        // Train discriminator
+        let 𝛁dis = gradient(at: discCurrent)  { discCurrent -> Tensor<Float> in
             let noise = sampleNoise(image.shape, scale: noiseScale)
+            let fake = genCurrent(.init(image: image, noise: noise))
+            let fakeScore = discCurrent(fake).mean()
+            let realScore = discCurrent(real).mean()
             
-            let (lossG, 𝛁gen) = genCurrent.valueWithGradient { genCurrent -> Tensor<Float> in
+            writer.addScalar(tag: "\(tag)/Dfake", scalar: fakeScore.scalarized(), globalStep: step)
+            writer.addScalar(tag: "\(tag)/Dreal", scalar: realScore.scalarized(), globalStep: step)
+            
+            let lossD = hingeLossD(real: realScore, fake: fakeScore)
+            writer.addScalar(tag: "\(tag)/D", scalar: lossD.scalarized(), globalStep: step)
+            return lossD
+        }
+        optD.update(&discCurrent, along: 𝛁dis)
+        
+        // Train generator
+        if step % Config.nDisUpdate == 0 {
+            let 𝛁gen = gradient(at: genCurrent) { genCurrent -> Tensor<Float> in
+                let noise = sampleNoise(image.shape, scale: noiseScale)
                 let fake = genCurrent(.init(image: image, noise: noise))
                 let score = discCurrent(fake).mean()
-                let loss = pow(score - 1, 2)
+                
+                let classLoss = hingeLossG(score)
+                
                 let recon = genCurrent(.init(image: reconImage, noise: noiseOpt[layer]))
                 let reconLoss = meanSquaredError(predicted: recon, expected: real)
                 
-                // Update noise scale
-                if layer > 0 {
-                    noiseScale = sqrt(reconLoss.scalarized())
+                if step % (Config.nDisUpdate *  100) == 0 {
+                    writeImage(tag: "\(tag)/fake_image", image: fake, globalStep: step)
+                    writeImage(tag: "\(tag)/recon", image: recon, globalStep: step)
                 }
                 
-                return loss + Config.alpha * reconLoss
+                let lossG = classLoss + Config.alpha * reconLoss
+                writer.addScalar(tag: "\(tag)/Gclass", scalar: classLoss.scalarized(), globalStep: step)
+                writer.addScalar(tag: "\(tag)/Grec", scalar: reconLoss.scalarized(), globalStep: step)
+                writer.addScalar(tag: "\(tag)/G", scalar: lossG.scalarized(), globalStep: step)
+                return lossG
+                
             }
             optG.update(&genCurrent, along: 𝛁gen)
-            lossGs += lossG.scalarized()
+            
         }
         
-        writer.addScalar(tag: "\(tag)/G", scalar: lossGs / Float(Config.genIter), globalStep: i)
-        writer.addScalar(tag: "\(tag)/D", scalar: lossDs / Float(Config.discIter), globalStep: i)
+        if step % (100 * Config.nDisUpdate) == 0 {
+//            genCurrent.writeHistogram(writer: writer, layer: layer, globalStep: step)
+//            discCurrent.writeHistogram(writer: writer, layer: layer, globalStep: step)
+        }
     }
     
     Context.local.learningPhase = .inference
     
     // plot
-    writer.addImage(tag: "\(tag)/real", image: real.squeezingShape())
     do {
-        var image = generateThroughGenStack(sizes: reals.sizes)
+        var image = zeropad(generateThroughGenStack(sizes: reals.sizes))
         let noise = sampleNoise(image.shape, scale: noiseScale)
         image = genCurrent(.init(image: image, noise: noise))
-        writer.addImage(tag: "\(tag)/random", image: image.squeezingShape())
+        writeImage(tag: "\(tag)/random", image: image, globalStep: 0)
     }
     do {
-        var image = generateThroughGenStack(sizes: reals.sizes, noises: noiseOpt)
+        var image = zeropad(generateThroughGenStack(sizes: reals.sizes, noises: noiseOpt))
         let noise = noiseOpt[layer]
         image = genCurrent(.init(image: image, noise: noise))
-        writer.addImage(tag: "\(tag)/reconstruct", image: image.squeezingShape())
+        writeImage(tag: "\(tag)/reconstruct", image: image, globalStep: 0)
     }
     writer.flush()
     
     // end training
     genStack.append(genCurrent)
-    
-    noiseScales[layer] = noiseScale
-    
+    discStack.append(discCurrent)
+    noiseScales.append(noiseScale)
     print(noiseScales)
 }
 
@@ -150,7 +183,7 @@ func testMultipleScale() {
         
         let image = generateThroughGenStack(sizes: sizes)
         let label = String(describing: sizes.last!)
-        writer.addImage(tag: "MultiSize/\(label)", image: image.squeezingShape())
+        writeImage(tag: "MultiSize/\(label)", image: image.squeezingShape())
     }
 }
 
@@ -165,13 +198,13 @@ func testSuperResolution() {
         image = resizeBilinear(images: image, newSize: newSize)
         
         let noise = sampleNoise(image.shape, scale: noiseScales.last!)
-        image = gen(.init(image: image, noise: noise))
+        image = gen(.init(image: zeropad(image), noise: zeropad(noise)))
         
-        writer.addImage(tag: "SuperResolution", image: image.squeezingShape(), globalStep: i)
+        writeImage(tag: "SuperResolution", image: image.squeezingShape(), globalStep: i)
     }
 }
 
 train()
 testMultipleScale()
 testSuperResolution()
-writer.flush()
+writer.close()

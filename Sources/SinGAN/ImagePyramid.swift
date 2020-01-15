@@ -31,7 +31,7 @@ struct ImagePyramid {
     let images: [Tensor<Float>]
     
     var sizes: [Size] {
-        images.map { Size(width: $0.shape[1], height: $0.shape[0]) }
+        images.map { Size(width: $0.shape[2], height: $0.shape[1]) }
     }
     
     init(images: [Tensor<Float>]) {
@@ -60,11 +60,11 @@ struct ImagePyramid {
         }
         
         let images: [Image<RGB, Float>] = sizeList.map { size in
-            baseImage.resize(width: size.width, height: size.height, method: .bilinear)
+            baseImage.resize(width: size.width, height: size.height, method: .areaAverage)
         }
         
         return ImagePyramid(images: images.map {
-            Tensor(shape: [$0.height, $0.width, 3], scalars: $0.getData())
+            2 * Tensor(shape: [1, $0.height, $0.width, 3], scalars: $0.getData()) - 1
         })
     }
 }

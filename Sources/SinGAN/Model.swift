@@ -1,4 +1,22 @@
 import TensorFlow
+import TensorBoardX
+
+private let kernelSize = 3
+
+@differentiable
+func lrelu(_ x: Tensor<Float>) -> Tensor<Float> {
+    leakyRelu(x)
+}
+
+@differentiable
+func hingeLossD(real: Tensor<Float>, fake: Tensor<Float>) -> Tensor<Float> {
+    relu(1 - real).mean() + relu(1+fake).mean()
+}
+
+@differentiable
+func hingeLossG(_ x: Tensor<Float>) -> Tensor<Float> {
+    -x
+}
 
 func resizeBilinear(images: Tensor<Float>, newSize: Size) -> Tensor<Float> {
     _Raw.resizeBilinear(images: images,
@@ -6,23 +24,39 @@ func resizeBilinear(images: Tensor<Float>, newSize: Size) -> Tensor<Float> {
                         alignCorners: true)
 }
 
+public func convWeightInit<Scalar: TensorFlowFloatingPoint>(
+    seed: TensorFlowSeed = Context.local.randomSeed
+) -> ParameterInitializer<Scalar> {
+    { Tensor<Scalar>(randomNormal: $0, mean: Tensor(0), standardDeviation: Tensor(0.02), seed: seed) }
+}
+
 struct ConvBlock: Layer {
-    typealias Activation = @differentiable (Tensor<Float>) -> Tensor<Float>
-    
-    var conv: Conv2D<Float>
+    var conv: SNConv2D<Float>
     var bn: BatchNorm<Float>
-    @noDerivative public let activation: Activation
     
-    init(inputDim: Int, outputDim: Int) {
-        self.conv = Conv2D(filterShape: (Config.kernelSize, Config.kernelSize, inputDim, outputDim),
-                           padding: .same)
-        self.bn = BatchNorm(featureCount: outputDim)
-        self.activation = { leakyRelu($0) }
+    @noDerivative
+    let enableBatchNorm: Bool
+    
+    init(inputChannels: Int,
+         outputChannels: Int,
+         enableSpectralNorm: Bool = true,
+         enableBatchNorm: Bool = true) {
+        self.conv = SNConv2D(Conv2D(filterShape: (3, 3, inputChannels, outputChannels),
+                                    filterInitializer: convWeightInit()),
+                             enabled: enableSpectralNorm)
+        self.bn = BatchNorm(featureCount: outputChannels)
+        self.enableBatchNorm = enableBatchNorm
     }
     
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        activation(bn(conv(input)))
+        var x = input
+        x = conv(x)
+        if enableBatchNorm {
+            x = bn(x)
+        }
+        x = lrelu(x)
+        return x
     }
 }
 
@@ -31,21 +65,28 @@ struct Generator: Layer {
         var image: Tensor<Float> // [batch_size, height, width, 3]
         var noise: Tensor<Float> // [batch_size, height, width, 3]
     }
-    
+
     var head: ConvBlock
     var conv1: ConvBlock
     var conv2: ConvBlock
     var conv3: ConvBlock
-    var tail: Conv2D<Float>
+    var tail: SNConv2D<Float>
     
     init(channels: Int) {
-        self.head = ConvBlock(inputDim: 3, outputDim: channels)
-        self.conv1 = ConvBlock(inputDim: channels, outputDim: channels)
-        self.conv2 = ConvBlock(inputDim: channels, outputDim: channels)
-        self.conv3 = ConvBlock(inputDim: channels, outputDim: channels)
-        self.tail = Conv2D(filterShape: (3, 3, channels, 3), padding: .same)
+        let enableSN = false
+        self.head = ConvBlock(inputChannels: 3, outputChannels: channels,
+                              enableSpectralNorm: enableSN)
+        self.conv1 = ConvBlock(inputChannels: channels, outputChannels: channels,
+                               enableSpectralNorm: enableSN)
+        self.conv2 = ConvBlock(inputChannels: channels, outputChannels: channels,
+                               enableSpectralNorm: enableSN)
+        self.conv3 = ConvBlock(inputChannels: channels, outputChannels: channels,
+                               enableSpectralNorm: enableSN)
+        self.tail = SNConv2D(Conv2D(filterShape: (3, 3, channels, 3),
+                                    filterInitializer: convWeightInit()),
+                             enabled: enableSN)
     }
-    
+
     @differentiable
     func callAsFunction(_ input: Input) -> Tensor<Float> {
         var x = input.image + input.noise
@@ -55,7 +96,12 @@ struct Generator: Layer {
         x = conv3(x)
         x = tail(x)
         x = tanh(x)
-        return x + input.image
+
+        let h = input.image.shape[1]
+        let w = input.image.shape[2]
+        let unpad = input.image.slice(lowerBounds: [0, 5, 5, 0], upperBounds: [1, h-5, w-5, 3])
+
+        return x + unpad
     }
 }
 
@@ -64,16 +110,22 @@ struct Discriminator: Layer {
     var conv1: ConvBlock
     var conv2: ConvBlock
     var conv3: ConvBlock
-    var tail: Conv2D<Float>
-    
+    var tail: SNConv2D<Float>
+
     init(channels: Int) {
-        self.head = ConvBlock(inputDim: 3, outputDim: channels)
-        self.conv1 = ConvBlock(inputDim: channels, outputDim: channels)
-        self.conv2 = ConvBlock(inputDim: channels, outputDim: channels)
-        self.conv3 = ConvBlock(inputDim: channels, outputDim: channels)
-        self.tail = Conv2D(filterShape: (3, 3, channels, 1), padding: .same)
+        let enableBN = false
+        self.head = ConvBlock(inputChannels: 3, outputChannels: channels,
+                              enableBatchNorm: enableBN)
+        self.conv1 = ConvBlock(inputChannels: channels, outputChannels: channels,
+                               enableBatchNorm: enableBN)
+        self.conv2 = ConvBlock(inputChannels: channels, outputChannels: channels,
+                               enableBatchNorm: enableBN)
+        self.conv3 = ConvBlock(inputChannels: channels, outputChannels: channels,
+                               enableBatchNorm: enableBN)
+        self.tail = SNConv2D(Conv2D(filterShape: (3, 3, channels, 1),
+                                    filterInitializer: convWeightInit()))
     }
-    
+
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var x = input
