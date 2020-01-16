@@ -1,27 +1,6 @@
 import TensorFlow
 import TensorBoardX
 
-@differentiable
-func lrelu(_ x: Tensor<Float>) -> Tensor<Float> {
-    leakyRelu(x)
-}
-
-@differentiable
-func hingeLossD(real: Tensor<Float>, fake: Tensor<Float>) -> Tensor<Float> {
-    relu(1 - real).mean() + relu(1+fake).mean()
-}
-
-@differentiable
-func hingeLossG(_ x: Tensor<Float>) -> Tensor<Float> {
-    -x.mean()
-}
-
-func resizeBilinear(images: Tensor<Float>, newSize: Size) -> Tensor<Float> {
-    _Raw.resizeBilinear(images: images,
-                        size: Tensor([Int32(newSize.height), Int32(newSize.width)]),
-                        alignCorners: true)
-}
-
 struct ConvBlock: Layer {
     var conv: SNConv2D<Float>
     var norm: InstanceNorm2D<Float>

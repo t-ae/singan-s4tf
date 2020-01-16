@@ -32,7 +32,7 @@ func trainSingleScale() {
     
     var (gen, disc) = modelStack.createNewModels()
     
-    let optG = Adam(for: gen, learningRate: 5e-2, beta1: 0.5, beta2: 0.999)
+    let optG = Adam(for: gen, learningRate: 5e-4, beta1: 0.5, beta2: 0.999)
     let optD = Adam(for: disc, learningRate: 5e-4, beta1: 0.5, beta2: 0.999)
     
     let currentSize = reals.sizes[layer]
@@ -66,20 +66,22 @@ func trainSingleScale() {
         fakeBase = modelStack.zeroPad(fakeBase)
         
         // Train discriminator
-        let 𝛁dis = gradient(at: disc)  { disc -> Tensor<Float> in
+        let 𝛁disc = gradient(at: disc)  { disc -> Tensor<Float> in
             let noise = Tensor<Float>(randomNormal: fakeBase.shape) * noiseScale
             let fake = gen(.init(image: fakeBase, noise: noise))
             let fakeScore = disc(fake)
             let realScore = disc(real)
 
-            writer.addScalar(tag: "\(tag)/DfakeScore", scalar: fakeScore.mean().scalarized(), globalStep: step)
-            writer.addScalar(tag: "\(tag)/DrealScore", scalar: realScore.mean().scalarized(), globalStep: step)
+            writer.addScalar(tag: "\(tag)/D.fakeScore", scalar: fakeScore.mean().scalarized(), globalStep: step)
+            writer.addScalar(tag: "\(tag)/D.realScore", scalar: realScore.mean().scalarized(), globalStep: step)
 
             let lossD = loss.lossD(real: realScore, fake: fakeScore)
             writer.addScalar(tag: "\(tag)/D", scalar: lossD.scalarized(), globalStep: step)
             return lossD
         }
-        optD.update(&disc, along: 𝛁dis)
+        optD.update(&disc, along: 𝛁disc)
+        
+//        print(disc.head.conv.conv.filter[0, 0, 0, 0])
         
         // Train generator
         if step % Config.nDisUpdate == 0 {
@@ -99,8 +101,8 @@ func trainSingleScale() {
                 }
                 
                 let lossG = classLoss + Config.alpha * recLoss
-                writer.addScalar(tag: "\(tag)/Gclass", scalar: classLoss.scalarized(), globalStep: step)
-                writer.addScalar(tag: "\(tag)/Grec", scalar: recLoss.scalarized(), globalStep: step)
+                writer.addScalar(tag: "\(tag)/G.classLoss", scalar: classLoss.scalarized(), globalStep: step)
+                writer.addScalar(tag: "\(tag)/G.recLoss", scalar: recLoss.scalarized(), globalStep: step)
                 writer.addScalar(tag: "\(tag)/G", scalar: lossG.scalarized(), globalStep: step)
                 return lossG
                 
