@@ -34,10 +34,14 @@ struct ConvBlock: Layer {
 struct Generator: Layer {
     struct Input: Differentiable {
         var image: Tensor<Float> // [batch_size, height, width, 3]
-        var noise: Tensor<Float> // [batch_size, height, width, 3]
+        var noise: Tensor<Float> // [batch_size, height, width, 1]
         
         init(image: Tensor<Float>, noise: Tensor<Float>) {
-            precondition(image.shape == noise.shape, "\(image.shape) != \(noise.shape)")
+            precondition(image.shape[0] == noise.shape[0])
+            precondition(image.shape[1] == noise.shape[1])
+            precondition(image.shape[2] == noise.shape[2])
+            precondition(image.shape[3] == 3)
+            precondition(noise.shape[3] == 1)
             self.image = image
             self.noise = noise
         }
@@ -50,7 +54,7 @@ struct Generator: Layer {
     var tail: SNConv2D<Float>
     
     init(channels: Int) {
-        let enableSN = true
+        let enableSN = false
         let enableNorm = true
         self.head = ConvBlock(inputChannels: 3, outputChannels: channels,
                               enableSpectralNorm: enableSN,

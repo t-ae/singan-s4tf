@@ -6,14 +6,15 @@ enum Config {
     
     // pyramid params
     static let scaleFactor: Float = 0.75
-    static let noiseScaleBase: Float = 0.1
     static let imageMinSize = 20
     static let imageMaxSize = 250
     
     // training params
     static let trainEpochsPerLayer = 3000
-    static let nDisUpdate = 5
+    static let nDisUpdate = 1
     static let alpha: Float = 50
+    static let gamma: Float = 0.1
+    static let noiseScaleBase: Float = 0.1
     
     // test configuration
     static let superResolutionIter = 5

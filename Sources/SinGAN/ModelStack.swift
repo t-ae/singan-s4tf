@@ -38,22 +38,27 @@ struct ModelStack {
     func createNoiseOpt(sizes: [Size]) -> [Tensor<Float>] {
         var noises = [Tensor<Float>]()
         
-        noises.append(Tensor<Float>(randomNormal: noiseShape(for: sizes[0])))
+        noises.append(sampleNoise(for: sizes[0], noiseScale: 1))
         for size in sizes.dropFirst() {
-            noises.append(Tensor<Float>(zeros: noiseShape(for: size)))
+            noises.append(zeroPad(Tensor<Float>(zeros: [1, size.height, size.width, 1])))
         }
         
         return noises
     }
     
-    func noiseShape(for size: Size) -> TensorShape {
-        // padding 5
-        return [1, size.height + 5*2, size.width + 5*2, 3]
+//    func noiseShape(for size: Size) -> TensorShape {
+//        // padding 5
+//        return [1, size.height + 5*2, size.width + 5*2, 1]
+//    }
+    
+    func sampleNoise(for size: Size, noiseScale: Float) -> Tensor<Float> {
+        let noise = Tensor<Float>(randomNormal: [1, size.height, size.width, 1]) * noiseScale
+        return zeroPad(noise)
     }
     
     func generate(sizes: [Size]) -> Tensor<Float> {
         let noises = zip(sizes, noiseScales).map { size, noiseScale in
-            Tensor<Float>(randomNormal: noiseShape(for: size)) * noiseScale
+            sampleNoise(for: size, noiseScale: noiseScale)
         }
         return generate(sizes: sizes, noises: noises)
     }
@@ -89,7 +94,7 @@ struct ModelStack {
         var image = image
         image = resizeBilinear(images: image, newSize: size)
         image = zeroPad(image)
-        let noise = Tensor<Float>(randomNormal: noiseShape(for: size)) * noiseScale
+        let noise = sampleNoise(for: size, noiseScale: noiseScale)
         
         return gen(.init(image: image, noise: noise))
     }

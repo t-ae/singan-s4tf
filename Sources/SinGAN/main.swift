@@ -60,6 +60,11 @@ func trainSingleScale() {
         if step % 10 == 0 {
             print("Epoch: \(step) noiseScale=\(noiseScale)")
         }
+        if step == steps * 8 / 10 {
+            print("Decay leraning rate")
+            optG.learningRate *= Config.gamma
+            optD.learningRate *= Config.gamma
+        }
         
         var fakeBase = modelStack.generate(sizes: sizes)
         fakeBase = resizeBilinear(images: fakeBase, newSize: currentSize)
@@ -67,16 +72,20 @@ func trainSingleScale() {
         
         // Train discriminator
         let 𝛁disc = gradient(at: disc)  { disc -> Tensor<Float> in
-            let noise = Tensor<Float>(randomNormal: fakeBase.shape) * noiseScale
+            let noise = modelStack.sampleNoise(for: currentSize, noiseScale: noiseScale)
             let fake = gen(.init(image: fakeBase, noise: noise))
             let fakeScore = disc(fake)
             let realScore = disc(real)
 
-            writer.addScalar(tag: "\(tag)/D.fakeScore", scalar: fakeScore.mean().scalarized(), globalStep: step)
-            writer.addScalar(tag: "\(tag)/D.realScore", scalar: realScore.mean().scalarized(), globalStep: step)
+            writer.addScalar(tag: "\(tag)D/fakeScoreMean",
+                scalar: fakeScore.mean().scalarized(),
+                             globalStep: step)
+            writer.addScalar(tag: "\(tag)D/realScoreMean",
+                scalar: realScore.mean().scalarized(),
+                             globalStep: step)
 
             let lossD = loss.lossD(real: realScore, fake: fakeScore)
-            writer.addScalar(tag: "\(tag)/D", scalar: lossD.scalarized(), globalStep: step)
+            writer.addScalar(tag: "\(tag)D/loss", scalar: lossD.scalarized(), globalStep: step)
             return lossD
         }
         optD.update(&disc, along: 𝛁disc)
@@ -84,7 +93,7 @@ func trainSingleScale() {
         // Train generator
         if step % Config.nDisUpdate == 0 {
             let 𝛁gen = gradient(at: gen) { gen -> Tensor<Float> in
-                let noise = Tensor<Float>(randomNormal: fakeBase.shape) * noiseScale
+                let noise = modelStack.sampleNoise(for: currentSize, noiseScale: noiseScale)
                 let fake = gen(.init(image: fakeBase, noise: noise))
                 let score = disc(fake)
                 
@@ -99,9 +108,11 @@ func trainSingleScale() {
                 }
                 
                 let lossG = classLoss + Config.alpha * recLoss
-                writer.addScalar(tag: "\(tag)/G.classLoss", scalar: classLoss.scalarized(), globalStep: step)
-                writer.addScalar(tag: "\(tag)/G.recLoss", scalar: recLoss.scalarized(), globalStep: step)
-                writer.addScalar(tag: "\(tag)/G", scalar: lossG.scalarized(), globalStep: step)
+                writer.addScalar(tag: "\(tag)G/classLoss",
+                    scalar: classLoss.scalarized(),
+                                 globalStep: step)
+                writer.addScalar(tag: "\(tag)G/recLoss", scalar: recLoss.scalarized(), globalStep: step)
+                writer.addScalar(tag: "\(tag)G/loss", scalar: lossG.scalarized(), globalStep: step)
                 return lossG
                 
             }
@@ -109,8 +120,8 @@ func trainSingleScale() {
         }
         
         if step % (500 * Config.nDisUpdate) == 0 {
-            writer.addHistograms(tag: "G\(layer)/", layer: gen, globalStep: step)
-            writer.addHistograms(tag: "D\(layer)/", layer: disc, globalStep: step)
+            writer.addHistograms(tag: "\(tag)G/", layer: gen, globalStep: step)
+            writer.addHistograms(tag: "\(tag)D/", layer: disc, globalStep: step)
         }
     }
     
@@ -142,7 +153,8 @@ func testMultipleScale() {
     Context.local.learningPhase = .inference
     let initialSizes = [Size(width: 25, height: 25),
                         Size(width: 25, height: 50),
-                        Size(width: 40, height: 25)]
+                        Size(width: 40, height: 25),
+                        Size(width: 80, height: 25)]
     for initialSize in initialSizes {
         var sizes = [initialSize]
         for _ in 1..<modelStack.trainedLayers {
