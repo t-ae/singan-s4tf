@@ -46,14 +46,15 @@ struct ModelStack {
         return noises
     }
     
-//    func noiseShape(for size: Size) -> TensorShape {
-//        // padding 5
-//        return [1, size.height + 5*2, size.width + 5*2, 1]
-//    }
-    
     func sampleNoise(for size: Size, noiseScale: Float) -> Tensor<Float> {
-        let noise = Tensor<Float>(randomNormal: [1, size.height, size.width, 1]) * noiseScale
-        return zeroPad(noise)
+        switch Config.noisePadding {
+        case .zero:
+            let noise = Tensor<Float>(randomNormal: [1, size.height, size.width, 1]) * noiseScale
+            return zeroPad(noise)
+        case .noise:
+            return Tensor<Float>(randomNormal: [1, size.height + 5*2, size.width + 5*2, 1]) * noiseScale
+        }
+        
     }
     
     func generate(sizes: [Size]) -> Tensor<Float> {

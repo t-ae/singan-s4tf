@@ -15,10 +15,15 @@ enum Config {
     static let alpha: Float = 50
     static let gamma: Float = 0.1
     static let noiseScaleBase: Float = 0.1
+    static let noisePadding: NoisePadding = .noise
     
     // test configuration
     static let superResolutionIter = 5
     
     // plot configuration
     static let tensorBoardLogDir = URL(fileURLWithPath: "./logdir")
+}
+
+enum NoisePadding {
+    case zero, noise
 }
