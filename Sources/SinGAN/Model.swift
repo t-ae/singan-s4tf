@@ -56,6 +56,12 @@ struct Generator: Layer {
     struct Input: Differentiable {
         var image: Tensor<Float> // [batch_size, height, width, 3]
         var noise: Tensor<Float> // [batch_size, height, width, 3]
+        
+        init(image: Tensor<Float>, noise: Tensor<Float>) {
+            precondition(image.shape == noise.shape, "\(image.shape) != \(noise.shape)")
+            self.image = image
+            self.noise = noise
+        }
     }
 
     var head: ConvBlock
@@ -106,7 +112,7 @@ struct Discriminator: Layer {
 
     init(channels: Int) {
         let enableSN = true
-        let enableNorm = true
+        let enableNorm = false
         self.head = ConvBlock(inputChannels: 3, outputChannels: channels,
                               enableSpectralNorm: enableSN,
                               enableNorm: enableNorm)

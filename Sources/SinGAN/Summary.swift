@@ -1,12 +1,5 @@
 import TensorBoardX
 
-extension SNDense: HistogramWritable where Scalar == Float {
-    public func writeHistograms(tag: String, writer: SummaryWriter, globalStep: Int?) {
-        writer.addHistogram(tag: "\(tag).weight", values: dense.weight, globalStep: globalStep)
-        writer.addHistogram(tag: "\(tag).bias", values: dense.bias, globalStep: globalStep)
-    }
-}
-
 extension SNConv2D: HistogramWritable where Scalar == Float {
     public func writeHistograms(tag: String, writer: SummaryWriter, globalStep: Int?) {
         writer.addHistogram(tag: "\(tag).filter", values: conv.filter, globalStep: globalStep)
