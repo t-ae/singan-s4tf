@@ -78,7 +78,7 @@ func trainSingleScale() {
         noiseScale = 1
     } else {
         let recon = generateThroughGenStack(sizes: reals.sizes, noises: noiseOpt)
-        let rmse = sqrt((pow((recon - real), 2)).mean())
+        let rmse = sqrt(meanSquaredError(predicted: recon, expected: real))
         noiseScale = Config.noiseScaleBase * rmse.scalarized()
     }
     
