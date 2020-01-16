@@ -1,6 +1,6 @@
 import TensorFlow
 
-protocol Loss {
+protocol GANLoss {
     var name: String { get }
     @differentiable
     func lossG(_ tensor: Tensor<Float>) -> Tensor<Float>
@@ -9,7 +9,7 @@ protocol Loss {
     func lossD(real: Tensor<Float>, fake: Tensor<Float>) -> Tensor<Float>
 }
 
-struct NonSaturatingLoss: Loss {
+struct NonSaturatingLoss: GANLoss {
     let name: String = "NonSaturating"
     
     @differentiable
@@ -23,7 +23,7 @@ struct NonSaturatingLoss: Loss {
     }
 }
 
-struct LSGANLoss: Loss {
+struct LSGANLoss: GANLoss {
     let name = "LSGAN"
     
     @differentiable
@@ -37,7 +37,7 @@ struct LSGANLoss: Loss {
     }
 }
 
-struct HingeLoss: Loss {
+struct HingeLoss: GANLoss {
     let name = "Hinge"
     
     @differentiable
