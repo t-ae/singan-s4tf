@@ -13,7 +13,7 @@ enum Config {
     // training params
     static let trainEpochsPerLayer = 3000
     static let nDisUpdate = 5
-    static let alpha: Float = 10
+    static let alpha: Float = 50
     
     // test configuration
     static let superResolutionIter = 5

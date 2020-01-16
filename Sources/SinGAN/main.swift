@@ -81,8 +81,6 @@ func trainSingleScale() {
         }
         optD.update(&disc, along: 𝛁disc)
         
-//        print(disc.head.conv.conv.filter[0, 0, 0, 0])
-        
         // Train generator
         if step % Config.nDisUpdate == 0 {
             let 𝛁gen = gradient(at: gen) { gen -> Tensor<Float> in
@@ -121,9 +119,9 @@ func trainSingleScale() {
     Context.local.learningPhase = .inference
     
     // plot
-    do { // random
+    for i in 0..<10 { // random
         let image = modelStack.generate(sizes: Array(reals.sizes[...layer]))
-        writeImage(tag: "\(tag)/FinalRandom", image: image, globalStep: 0)
+        writeImage(tag: "\(tag)/FinalRandom", image: image, globalStep: i)
     }
     do { // reconstruct
         let image = modelStack.generate(sizes: Array(reals.sizes[...layer]), noises: noiseOpt)

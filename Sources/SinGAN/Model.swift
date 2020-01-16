@@ -50,15 +50,20 @@ struct Generator: Layer {
     var tail: SNConv2D<Float>
     
     init(channels: Int) {
-        let enableSN = false
+        let enableSN = true
+        let enableNorm = true
         self.head = ConvBlock(inputChannels: 3, outputChannels: channels,
-                              enableSpectralNorm: enableSN)
+                              enableSpectralNorm: enableSN,
+                              enableNorm: enableNorm)
         self.conv1 = ConvBlock(inputChannels: channels, outputChannels: channels,
-                               enableSpectralNorm: enableSN)
+                               enableSpectralNorm: enableSN,
+                               enableNorm: enableNorm)
         self.conv2 = ConvBlock(inputChannels: channels, outputChannels: channels,
-                               enableSpectralNorm: enableSN)
+                               enableSpectralNorm: enableSN,
+                               enableNorm: enableNorm)
         self.conv3 = ConvBlock(inputChannels: channels, outputChannels: channels,
-                               enableSpectralNorm: enableSN)
+                               enableSpectralNorm: enableSN,
+                               enableNorm: enableNorm)
         self.tail = SNConv2D(Conv2D(filterShape: (3, 3, channels, 3),
                                     filterInitializer: heNormal()),
                              enabled: enableSN)
