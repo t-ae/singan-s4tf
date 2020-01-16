@@ -100,7 +100,7 @@ struct Discriminator: Layer {
 
     init(channels: Int) {
         let enableSN = true
-        let enableNorm = false
+        let enableNorm = true
         self.head = ConvBlock(inputChannels: 3, outputChannels: channels,
                               enableSpectralNorm: enableSN,
                               enableNorm: enableNorm)

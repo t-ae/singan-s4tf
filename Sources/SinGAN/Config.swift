@@ -12,7 +12,7 @@ enum Config {
     // training params
     static let trainEpochsPerLayer = 5000
     static let nDisUpdate = 1
-    static let alpha: Float = 50
+    static let alpha: Float = 30
     static let gamma: Float = 0.1
     static let noiseScaleBase: Float = 0.1
     static let noisePadding: NoisePadding = .noise

@@ -50,3 +50,30 @@ struct HingeLoss: GANLoss {
         relu(1 - real).mean() + relu(1 + fake).mean()
     }
 }
+
+protocol ReconstructionLoss {
+    @differentiable(wrt: fake)
+    func callAsFunction(real: Tensor<Float>, fake: Tensor<Float>) -> Tensor<Float>
+}
+
+struct MSELoss: ReconstructionLoss {
+    @differentiable(wrt: fake)
+    func callAsFunction(real: Tensor<Float>, fake: Tensor<Float>) -> Tensor<Float> {
+        meanSquaredError(predicted: fake, expected: real)
+    }
+}
+
+struct BCELoss: ReconstructionLoss {
+    @differentiable(wrt: fake)
+    func callAsFunction(real: Tensor<Float>, fake: Tensor<Float>) -> Tensor<Float> {
+        // [0,1] range
+        var real = (real + 1) / 2
+        real = real.clipped(min: 0, max: 1)
+        var fake = (fake + 1) / 2
+        fake = fake.clipped(min: 0, max: 1)
+        
+        let loss1 = -(real) * log(fake)
+        let loss2 = -(1-real) * log(1-fake)
+        return (loss1 + loss2).mean()
+    }
+}

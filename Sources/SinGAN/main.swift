@@ -10,7 +10,8 @@ print("Image: \(imageURL)")
 let reals = try ImagePyramid.load(file: imageURL)
 
 var modelStack = ModelStack()
-let ganLoss = HingeLoss()
+let ganLossCriterion = HingeLoss()
+let recLossCriterion = MSELoss()
 
 let writer = SummaryWriter(logdir: Config.tensorBoardLogDir)
 writer.addText(tag: "sizes", text: String(describing: reals.sizes))
@@ -84,7 +85,7 @@ func trainSingleScale() {
                 scalar: realScore.mean().scalarized(),
                              globalStep: step)
 
-            let lossD = ganLoss.lossD(real: realScore, fake: fakeScore)
+            let lossD = ganLossCriterion.lossD(real: realScore, fake: fakeScore)
             writer.addScalar(tag: "\(tag)D/loss", scalar: lossD.scalarized(), globalStep: step)
             return lossD
         }
@@ -97,10 +98,10 @@ func trainSingleScale() {
                 let fake = gen(.init(image: fakeBase, noise: noise))
                 let score = disc(fake)
                 
-                let classLoss = ganLoss.lossG(score)
+                let classLoss = ganLossCriterion.lossG(score)
                 
                 let rec = gen(.init(image: recBase, noise: noiseOpt[layer]))
-                let recLoss = meanSquaredError(predicted: rec, expected: real)
+                let recLoss = recLossCriterion(real: real, fake: rec)
                 
                 if step % (Config.nDisUpdate *  100) == 0 {
                     writeImage(tag: "\(tag)/fake", image: fake, globalStep: step)
