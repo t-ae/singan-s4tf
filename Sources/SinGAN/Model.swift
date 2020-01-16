@@ -1,8 +1,6 @@
 import TensorFlow
 import TensorBoardX
 
-private let kernelSize = 3
-
 @differentiable
 func lrelu(_ x: Tensor<Float>) -> Tensor<Float> {
     leakyRelu(x)
@@ -15,7 +13,7 @@ func hingeLossD(real: Tensor<Float>, fake: Tensor<Float>) -> Tensor<Float> {
 
 @differentiable
 func hingeLossG(_ x: Tensor<Float>) -> Tensor<Float> {
-    -x
+    -x.mean()
 }
 
 func resizeBilinear(images: Tensor<Float>, newSize: Size) -> Tensor<Float> {
@@ -24,36 +22,30 @@ func resizeBilinear(images: Tensor<Float>, newSize: Size) -> Tensor<Float> {
                         alignCorners: true)
 }
 
-public func convWeightInit<Scalar: TensorFlowFloatingPoint>(
-    seed: TensorFlowSeed = Context.local.randomSeed
-) -> ParameterInitializer<Scalar> {
-    { Tensor<Scalar>(randomNormal: $0, mean: Tensor(0), standardDeviation: Tensor(0.02), seed: seed) }
-}
-
 struct ConvBlock: Layer {
     var conv: SNConv2D<Float>
-    var bn: BatchNorm<Float>
+    var norm: InstanceNorm2D<Float>
     
     @noDerivative
-    let enableBatchNorm: Bool
+    let enableNorm: Bool
     
     init(inputChannels: Int,
          outputChannels: Int,
          enableSpectralNorm: Bool = true,
-         enableBatchNorm: Bool = true) {
+         enableNorm: Bool = true) {
         self.conv = SNConv2D(Conv2D(filterShape: (3, 3, inputChannels, outputChannels),
-                                    filterInitializer: convWeightInit()),
+                                    filterInitializer: heNormal()),
                              enabled: enableSpectralNorm)
-        self.bn = BatchNorm(featureCount: outputChannels)
-        self.enableBatchNorm = enableBatchNorm
+        self.norm = InstanceNorm2D(featureCount: outputChannels)
+        self.enableNorm = enableNorm
     }
     
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var x = input
         x = conv(x)
-        if enableBatchNorm {
-            x = bn(x)
+        if enableNorm {
+            x = norm(x)
         }
         x = lrelu(x)
         return x
@@ -83,7 +75,7 @@ struct Generator: Layer {
         self.conv3 = ConvBlock(inputChannels: channels, outputChannels: channels,
                                enableSpectralNorm: enableSN)
         self.tail = SNConv2D(Conv2D(filterShape: (3, 3, channels, 3),
-                                    filterInitializer: convWeightInit()),
+                                    filterInitializer: heNormal()),
                              enabled: enableSN)
     }
 
@@ -113,19 +105,25 @@ struct Discriminator: Layer {
     var tail: SNConv2D<Float>
 
     init(channels: Int) {
-        let enableBN = false
+        let enableSN = true
+        let enableNorm = true
         self.head = ConvBlock(inputChannels: 3, outputChannels: channels,
-                              enableBatchNorm: enableBN)
+                              enableSpectralNorm: enableSN,
+                              enableNorm: enableNorm)
         self.conv1 = ConvBlock(inputChannels: channels, outputChannels: channels,
-                               enableBatchNorm: enableBN)
+                               enableSpectralNorm: enableSN,
+                               enableNorm: enableNorm)
         self.conv2 = ConvBlock(inputChannels: channels, outputChannels: channels,
-                               enableBatchNorm: enableBN)
+                               enableSpectralNorm: enableSN,
+                               enableNorm: enableNorm)
         self.conv3 = ConvBlock(inputChannels: channels, outputChannels: channels,
-                               enableBatchNorm: enableBN)
+                               enableSpectralNorm: enableSN,
+                               enableNorm: enableNorm)
         self.tail = SNConv2D(Conv2D(filterShape: (3, 3, channels, 1),
-                                    filterInitializer: convWeightInit()))
+                                    filterInitializer: heNormal()),
+                             enabled: enableSN)
     }
-
+    
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var x = input

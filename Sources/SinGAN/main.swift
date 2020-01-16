@@ -2,6 +2,8 @@ import Foundation
 import TensorFlow
 import TensorBoardX
 
+Context.local.randomSeed = (42, 42)
+
 let imageURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[1])
 //let imageURL = URL(fileURLWithPath: "/Users/araki/Desktop/t-ae/SinGAN/Input/Images/33039_LR.png")
 print("Image: \(imageURL)")
@@ -17,6 +19,7 @@ writer.addText(tag: "sizes", text: String(describing: reals.sizes))
 func writeImage(tag: String, image: Tensor<Float>, globalStep: Int = 0) {
     var image = image.squeezingShape()
     image = (image + 1) / 2
+    image = image.clipped(min: 0, max: 1)
     writer.addImage(tag: tag, image: image, globalStep: globalStep)
 }
 
@@ -67,7 +70,7 @@ func trainSingleScale() {
         discCurrent = discStack.last!
     }
     
-    let optG = Adam(for: genCurrent, learningRate: 5e-4, beta1: 0.5, beta2: 0.999)
+    let optG = Adam(for: genCurrent, learningRate: 5e-2, beta1: 0.5, beta2: 0.999)
     let optD = Adam(for: discCurrent, learningRate: 5e-4, beta1: 0.5, beta2: 0.999)
     
     let noiseScale: Float
@@ -93,12 +96,12 @@ func trainSingleScale() {
         let 𝛁dis = gradient(at: discCurrent)  { discCurrent -> Tensor<Float> in
             let noise = sampleNoise(image.shape, scale: noiseScale)
             let fake = genCurrent(.init(image: image, noise: noise))
-            let fakeScore = discCurrent(fake).mean()
-            let realScore = discCurrent(real).mean()
-            
-            writer.addScalar(tag: "\(tag)/Dfake", scalar: fakeScore.scalarized(), globalStep: step)
-            writer.addScalar(tag: "\(tag)/Dreal", scalar: realScore.scalarized(), globalStep: step)
-            
+            let fakeScore = discCurrent(fake)
+            let realScore = discCurrent(real)
+
+            writer.addScalar(tag: "\(tag)/Dfake", scalar: fakeScore.mean().scalarized(), globalStep: step)
+            writer.addScalar(tag: "\(tag)/Dreal", scalar: realScore.mean().scalarized(), globalStep: step)
+
             let lossD = hingeLossD(real: realScore, fake: fakeScore)
             writer.addScalar(tag: "\(tag)/D", scalar: lossD.scalarized(), globalStep: step)
             return lossD
@@ -110,7 +113,7 @@ func trainSingleScale() {
             let 𝛁gen = gradient(at: genCurrent) { genCurrent -> Tensor<Float> in
                 let noise = sampleNoise(image.shape, scale: noiseScale)
                 let fake = genCurrent(.init(image: image, noise: noise))
-                let score = discCurrent(fake).mean()
+                let score = discCurrent(fake)
                 
                 let classLoss = hingeLossG(score)
                 
@@ -130,12 +133,11 @@ func trainSingleScale() {
                 
             }
             optG.update(&genCurrent, along: 𝛁gen)
-            
         }
         
-        if step % (100 * Config.nDisUpdate) == 0 {
-//            genCurrent.writeHistogram(writer: writer, layer: layer, globalStep: step)
-//            discCurrent.writeHistogram(writer: writer, layer: layer, globalStep: step)
+        if step % (500 * Config.nDisUpdate) == 0 {
+            writer.addHistograms(tag: "G\(layer)/", layer: genCurrent, globalStep: step)
+            writer.addHistograms(tag: "D\(layer)/", layer: discCurrent, globalStep: step)
         }
     }
     
@@ -171,6 +173,7 @@ func train() {
 }
 
 func testMultipleScale() {
+    print("testMultipleScale")
     Context.local.learningPhase = .inference
     let initialSizes = [Size(width: 25, height: 25),
                         Size(width: 25, height: 50),
@@ -188,6 +191,7 @@ func testMultipleScale() {
 }
 
 func testSuperResolution() {
+    print("testSuperResolution")
     Context.local.learningPhase = .inference
     var image = reals.images.last!.expandingShape(at: 0) // [1, H, W, C]
     let gen = genStack.last!

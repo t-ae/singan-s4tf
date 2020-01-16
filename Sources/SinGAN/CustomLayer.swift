@@ -1,6 +1,13 @@
 import Foundation
 import TensorFlow
 
+public func heNormal<Scalar: TensorFlowFloatingPoint>() -> ParameterInitializer<Scalar> {
+    return { shape in
+        let out = shape.dimensions.dropLast().reduce(1, *)
+        return Tensor(randomNormal: shape) * sqrt(2 / Scalar(out))
+    }
+}
+
 private func l2normalize<Scalar: TensorFlowFloatingPoint>(_ tensor: Tensor<Scalar>) -> Tensor<Scalar> {
     tensor * rsqrt(tensor.squared().sum() + 1e-8)
 }
@@ -100,3 +107,23 @@ public struct SNConv2D<Scalar: TensorFlowFloatingPoint>: Layer {
     }
 }
 
+public struct InstanceNorm2D<Scalar: TensorFlowFloatingPoint>: Layer {
+    var scale: Tensor<Scalar>
+    var offset: Tensor<Scalar>
+    
+    public init(featureCount: Int) {
+        scale = Tensor(ones: [featureCount])
+        offset = Tensor(zeros: [featureCount])
+    }
+    
+    @differentiable
+    public func callAsFunction(_ input: Tensor<Scalar>) -> Tensor<Scalar> {
+        precondition(input.rank == 4)
+        
+        let mean = input.mean(alongAxes: 1, 2)
+        let variance = squaredDifference(input, mean).mean(alongAxes: 1, 2)
+        let normalized = (input - mean) * rsqrt(variance + 1e-8)
+        
+        return scale * normalized + offset
+    }
+}
