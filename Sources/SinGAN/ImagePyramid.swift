@@ -64,7 +64,7 @@ struct ImagePyramid {
         }
         
         return ImagePyramid(images: images.map {
-            2 * Tensor(shape: [1, $0.height, $0.width, 3], scalars: $0.getData()) - 1
+            2 * Tensor(image: $0).expandingShape(at: 0) - 1
         })
     }
 }

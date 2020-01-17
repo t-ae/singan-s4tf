@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "SinGAN",
     dependencies: [
-        .package(url: "https://github.com/t-ae/swim.git", from: "3.6.1"),
-        .package(url: "https://github.com/t-ae/tensorboardx-s4tf.git", from: "0.0.8"),
+        .package(url: "https://github.com/t-ae/swim.git", from: "3.7.0"),
+        .package(url: "https://github.com/t-ae/tensorboardx-s4tf.git", from: "0.0.10"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
