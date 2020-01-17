@@ -38,12 +38,3 @@ struct GDPair<T: Codable>: Codable {
     var G: T
     var D: T
 }
-
-extension Encodable {
-    func prettyJsonString() -> String {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
-        let data = try! encoder.encode(self)
-        return String(data: data, encoding: .utf8)!
-    }
-}

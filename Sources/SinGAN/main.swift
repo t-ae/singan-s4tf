@@ -34,7 +34,7 @@ let recLossCriterion = ReconstructionLoss(type: config.recLoss)
 
 let writer = SummaryWriter(logdir: config.tensorBoardLogDir)
 writer.addText(tag: "sizes", text: String(describing: reals.sizes))
-writer.addText(tag: "config", text: config.prettyJsonString())
+try writer.addJSONText(tag: "config", encodable: config)
 func writeImage(tag: String, image: Tensor<Float>, globalStep: Int = 0) {
     var image = image.squeezingShape()
     image = (image + 1) / 2
