@@ -19,8 +19,6 @@ To avoid this, I simply replaced batch norm with instance norm.
 ### Cease WGAN-GP training
 
 As I wrote in [the issue](https://github.com/tamarott/SinGAN/issues/59), original implementation of gradient penalty looks wrong.  
-And, according to [the WGAN-GP paper](https://arxiv.org/pdf/1704.00028.pdf), using batch norm in discriminator is prohibited.
-
 Anyway S4TF doesn't support higher-order differentiaion for now. So I decided not to use WGAN-GP.
 
 ### Use spectral normalization
