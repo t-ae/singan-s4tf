@@ -4,9 +4,6 @@ import TensorBoardX
 
 Context.local.randomSeed = (42, 42)
 
-let imageURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[1])
-print("Image: \(imageURL)")
-
 let config = Config(
     baseChannels: 32,
     scaleFactor: 0.75,
@@ -22,10 +19,11 @@ let config = Config(
     recLoss: .meanSquaredError,
     enableSN: .init(G: false, D: true),
     enableNorm: .init(G: true, D: false),
-    superResolutionIter: 5,
-    tensorBoardLogDir: URL(fileURLWithPath: "./logdir/\(imageURL.deletingPathExtension().lastPathComponent)")
+    superResolutionIter: 5
 )
 
+let imageURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[1])
+print("Image: \(imageURL)")
 
 let reals = try ImagePyramid.load(file: imageURL, config: config)
 
@@ -33,7 +31,7 @@ var modelStack = ModelStack(config: config)
 let ganLossCriterion = GANLoss(type: config.ganLoss)
 let recLossCriterion = ReconstructionLoss(type: config.recLoss)
 
-let writer = SummaryWriter(logdir: config.tensorBoardLogDir)
+let writer = SummaryWriter(logdir: URL(fileURLWithPath: "./logdir/\(imageURL.deletingPathExtension().lastPathComponent)"))
 writer.addText(tag: "sizes", text: String(describing: reals.sizes))
 try writer.addJSONText(tag: "config", encodable: config)
 func writeImage(tag: String, image: Tensor<Float>, globalStep: Int = 0) {

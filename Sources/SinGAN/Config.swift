@@ -25,9 +25,6 @@ struct Config: Codable {
     
     // test configuration
     let superResolutionIter: Int
-    
-    // plot configuration
-    let tensorBoardLogDir: URL
 }
 
 enum NoisePadding: String, Codable {
