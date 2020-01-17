@@ -4,6 +4,9 @@ import TensorBoardX
 
 Context.local.randomSeed = (42, 42)
 
+let imageURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[1])
+print("Image: \(imageURL)")
+
 let config = Config(
     baseChannels: 32,
     scaleFactor: 0.75,
@@ -20,12 +23,10 @@ let config = Config(
     enableSN: .init(G: false, D: true),
     enableNorm: .init(G: true, D: false),
     superResolutionIter: 5,
-    tensorBoardLogDir: URL(fileURLWithPath: "./logdir")
+    tensorBoardLogDir: URL(fileURLWithPath: "./logdir/\(imageURL.deletingPathExtension().lastPathComponent)")
 )
 
-let imageURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[1])
-//let imageURL = URL(fileURLWithPath: "/Users/araki/Desktop/t-ae/SinGAN/Input/Images/33039_LR.png")
-print("Image: \(imageURL)")
+
 let reals = try ImagePyramid.load(file: imageURL, config: config)
 
 var modelStack = ModelStack(config: config)
