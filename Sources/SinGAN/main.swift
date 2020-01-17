@@ -11,16 +11,17 @@ let config = Config(
     imageMaxSize: 250,
     trainEpochsPerLayer: 5000,
     nDisUpdate: 1,
-    alpha: 30,
+    alpha: 20,
     gamma: 0.1,
     noiseScaleBase: 0.1,
     noisePadding: .zero,
+    ganLoss: .hinge,
+    recLoss: .meanSquaredError,
     enableSN: .init(G: false, D: true),
     enableNorm: .init(G: true, D: false),
     superResolutionIter: 5,
     tensorBoardLogDir: URL(fileURLWithPath: "./logdir")
 )
-let configText = String(data: try JSONEncoder().encode(config), encoding: .utf8)!
 
 let imageURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[1])
 //let imageURL = URL(fileURLWithPath: "/Users/araki/Desktop/t-ae/SinGAN/Input/Images/33039_LR.png")
@@ -28,14 +29,12 @@ print("Image: \(imageURL)")
 let reals = try ImagePyramid.load(file: imageURL, config: config)
 
 var modelStack = ModelStack(config: config)
-let ganLossCriterion = HingeLoss()
-let recLossCriterion = MSELoss()
+let ganLossCriterion = GANLoss(type: config.ganLoss)
+let recLossCriterion = ReconstructionLoss(type: config.recLoss)
 
 let writer = SummaryWriter(logdir: config.tensorBoardLogDir)
 writer.addText(tag: "sizes", text: String(describing: reals.sizes))
-writer.addText(tag: "config", text: configText)
-writer.addText(tag: "ganLoss", text: ganLossCriterion.name)
-writer.addText(tag: "recLoss", text: recLossCriterion.name)
+writer.addText(tag: "config", text: config.prettyJsonString())
 func writeImage(tag: String, image: Tensor<Float>, globalStep: Int = 0) {
     var image = image.squeezingShape()
     image = (image + 1) / 2
