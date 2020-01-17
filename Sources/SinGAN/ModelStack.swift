@@ -23,8 +23,12 @@ struct ModelStack {
             // Copy of previous models
             return (g, d)
         } else {
-            let generator = Generator(channels: config.baseChannels)
-            let discriminator = Discriminator(channels: config.baseChannels)
+            let generator = Generator(channels: config.baseChannels,
+                                      enableSN: config.enableSN.G,
+                                      enableNorm: config.enableNorm.G)
+            let discriminator = Discriminator(channels: config.baseChannels,
+                                              enableSN: config.enableSN.D,
+                                              enableNorm: config.enableNorm.D)
             return (generator, discriminator)
         }
     }

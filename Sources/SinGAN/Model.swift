@@ -53,9 +53,7 @@ struct Generator: Layer {
     var conv3: ConvBlock
     var tail: SNConv2D<Float>
     
-    init(channels: Int) {
-        let enableSN = false
-        let enableNorm = true
+    init(channels: Int, enableSN: Bool, enableNorm: Bool) {
         self.head = ConvBlock(inputChannels: 3, outputChannels: channels,
                               enableSpectralNorm: enableSN,
                               enableNorm: enableNorm)
@@ -98,9 +96,7 @@ struct Discriminator: Layer {
     var conv3: ConvBlock
     var tail: SNConv2D<Float>
 
-    init(channels: Int) {
-        let enableSN = true
-        let enableNorm = false
+    init(channels: Int, enableSN: Bool, enableNorm: Bool) {
         self.head = ConvBlock(inputChannels: 3, outputChannels: channels,
                               enableSpectralNorm: enableSN,
                               enableNorm: enableNorm)

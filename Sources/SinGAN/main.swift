@@ -15,6 +15,8 @@ let config = Config(
     gamma: 0.1,
     noiseScaleBase: 0.1,
     noisePadding: .zero,
+    enableSN: .init(G: false, D: true),
+    enableNorm: .init(G: true, D: false),
     superResolutionIter: 5,
     tensorBoardLogDir: URL(fileURLWithPath: "./logdir")
 )

@@ -17,6 +17,10 @@ struct Config: Codable {
     let noiseScaleBase: Float
     let noisePadding: NoisePadding
     
+    // model params
+    let enableSN: GDPair<Bool>
+    let enableNorm: GDPair<Bool>
+    
     // test configuration
     let superResolutionIter: Int
     
@@ -26,4 +30,9 @@ struct Config: Codable {
 
 enum NoisePadding: String, Codable {
     case zero, noise
+}
+
+struct GDPair<T: Codable>: Codable {
+    var G: T
+    var D: T
 }
