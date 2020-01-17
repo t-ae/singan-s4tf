@@ -4,17 +4,36 @@ import TensorBoardX
 
 Context.local.randomSeed = (42, 42)
 
+let config = Config(
+    baseChannels: 32,
+    scaleFactor: 0.75,
+    imageMinSize: 20,
+    imageMaxSize: 250,
+    trainEpochsPerLayer: 5000,
+    nDisUpdate: 1,
+    alpha: 30,
+    gamma: 0.1,
+    noiseScaleBase: 0.1,
+    noisePadding: .zero,
+    superResolutionIter: 5,
+    tensorBoardLogDir: URL(fileURLWithPath: "./logdir")
+)
+let configText = String(data: try JSONEncoder().encode(config), encoding: .utf8)!
+
 let imageURL = URL(fileURLWithPath: ProcessInfo.processInfo.arguments[1])
 //let imageURL = URL(fileURLWithPath: "/Users/araki/Desktop/t-ae/SinGAN/Input/Images/33039_LR.png")
 print("Image: \(imageURL)")
-let reals = try ImagePyramid.load(file: imageURL)
+let reals = try ImagePyramid.load(file: imageURL, config: config)
 
-var modelStack = ModelStack()
+var modelStack = ModelStack(config: config)
 let ganLossCriterion = HingeLoss()
 let recLossCriterion = MSELoss()
 
-let writer = SummaryWriter(logdir: Config.tensorBoardLogDir)
+let writer = SummaryWriter(logdir: config.tensorBoardLogDir)
 writer.addText(tag: "sizes", text: String(describing: reals.sizes))
+writer.addText(tag: "config", text: configText)
+writer.addText(tag: "ganLoss", text: ganLossCriterion.name)
+writer.addText(tag: "recLoss", text: recLossCriterion.name)
 func writeImage(tag: String, image: Tensor<Float>, globalStep: Int = 0) {
     var image = image.squeezingShape()
     image = (image + 1) / 2
@@ -49,22 +68,22 @@ func trainSingleScale() {
         var rec = modelStack.generate(sizes: Array(reals.sizes[..<layer]), noises: noiseOpt)
         rec = resizeBilinear(images: rec, newSize: reals.sizes[layer])
         let rmse = sqrt(meanSquaredError(predicted: rec, expected: real))
-        noiseScale = Config.noiseScaleBase * rmse.scalarized()
+        noiseScale = config.noiseScaleBase * rmse.scalarized()
     }
-        
+    
     var recBase = modelStack.generate(sizes: sizes, noises: noiseOpt)
     recBase = resizeBilinear(images: recBase, newSize: currentSize)
     recBase = modelStack.zeroPad(recBase)
     
-    let steps = Config.trainEpochsPerLayer * Config.nDisUpdate
+    let steps = config.trainEpochsPerLayer * config.nDisUpdate
     for step in 0..<steps {
         if step % 10 == 0 {
             print("Epoch: \(step) noiseScale=\(noiseScale)")
         }
         if step == steps * 8 / 10 {
             print("Decay leraning rate")
-            optG.learningRate *= Config.gamma
-            optD.learningRate *= Config.gamma
+            optG.learningRate *= config.gamma
+            optD.learningRate *= config.gamma
         }
         
         var fakeBase = modelStack.generate(sizes: sizes)
@@ -92,7 +111,7 @@ func trainSingleScale() {
         optD.update(&disc, along: 𝛁disc)
         
         // Train generator
-        if step % Config.nDisUpdate == 0 {
+        if step % config.nDisUpdate == 0 {
             let 𝛁gen = gradient(at: gen) { gen -> Tensor<Float> in
                 let noise = modelStack.sampleNoise(for: currentSize, noiseScale: noiseScale)
                 let fake = gen(.init(image: fakeBase, noise: noise))
@@ -103,12 +122,12 @@ func trainSingleScale() {
                 let rec = gen(.init(image: recBase, noise: noiseOpt[layer]))
                 let recLoss = recLossCriterion(real: real, fake: rec)
                 
-                if step % (Config.nDisUpdate *  100) == 0 {
+                if step % (config.nDisUpdate *  100) == 0 {
                     writeImage(tag: "\(tag)/fake", image: fake, globalStep: step)
                     writeImage(tag: "\(tag)/rec", image: rec, globalStep: step)
                 }
                 
-                let lossG = classLoss + Config.alpha * recLoss
+                let lossG = classLoss + config.alpha * recLoss
                 writer.addScalar(tag: "\(tag)G/classLoss",
                     scalar: classLoss.scalarized(),
                                  globalStep: step)
@@ -120,7 +139,7 @@ func trainSingleScale() {
             optG.update(&gen, along: 𝛁gen)
         }
         
-        if step % (500 * Config.nDisUpdate) == 0 {
+        if step % (500 * config.nDisUpdate) == 0 {
             writer.addHistograms(tag: "\(tag)G/", layer: gen, globalStep: step)
             writer.addHistograms(tag: "\(tag)D/", layer: disc, globalStep: step)
         }
@@ -159,7 +178,7 @@ func testMultipleScale() {
     for initialSize in initialSizes {
         var sizes = [initialSize]
         for _ in 1..<modelStack.trainedLayers {
-            sizes.append(sizes.last!.scaled(factor: 1/Config.scaleFactor))
+            sizes.append(sizes.last!.scaled(factor: 1/config.scaleFactor))
         }
         
         let image = modelStack.generate(sizes: sizes)
@@ -171,11 +190,11 @@ func testMultipleScale() {
 func testSuperResolution() {
     print("testSuperResolution")
     Context.local.learningPhase = .inference
-    var image = reals.images.last!.expandingShape(at: 0) // [1, H, W, C]
+    var image = reals.images.last! // [1, H, W, C]
     
-    for i in 0..<Config.superResolutionIter {
+    for i in 0..<config.superResolutionIter {
         let newSize = Size(width: image.shape[2], height: image.shape[1])
-            .scaled(factor: 1/Config.scaleFactor)
+            .scaled(factor: 1/config.scaleFactor)
         image = modelStack.superResolution(image: image, size: newSize)
         writeImage(tag: "SuperResolution", image: image.squeezingShape(), globalStep: i)
     }

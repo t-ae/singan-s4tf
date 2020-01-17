@@ -42,18 +42,18 @@ struct ImagePyramid {
         return images[i]
     }
     
-    static func load(file: URL) throws -> ImagePyramid {
+    static func load(file: URL, config: Config) throws -> ImagePyramid {
         let baseImage = try Image<RGB, Float>(contentsOf: file)
         
         // keep aspect ratio
         let maxSize = Size(width: baseImage.width, height: baseImage.height)
-            .fit(maxSize: Config.imageMaxSize)
+            .fit(maxSize: config.imageMaxSize)
         
         var sizeList: [Size] = [maxSize]
         while true {
             let currentSize = sizeList.first!
-            let newSize = currentSize.scaled(factor: Config.scaleFactor)
-            guard newSize.width >= Config.imageMinSize && newSize.height >= Config.imageMinSize else {
+            let newSize = currentSize.scaled(factor: config.scaleFactor)
+            guard newSize.width >= config.imageMinSize && newSize.height >= config.imageMinSize else {
                 break
             }
             sizeList.insert(newSize, at: 0)

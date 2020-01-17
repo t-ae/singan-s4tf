@@ -2,6 +2,7 @@ import Foundation
 import TensorFlow
 
 struct ModelStack {
+    let config: Config
     private(set) var generators: [Generator]
     private(set) var discriminators: [Discriminator]
     private(set) var noiseScales: [Float]
@@ -10,7 +11,8 @@ struct ModelStack {
         generators.count
     }
     
-    init() {
+    init(config: Config) {
+        self.config = config
         generators = []
         discriminators = []
         noiseScales = []
@@ -21,8 +23,8 @@ struct ModelStack {
             // Copy of previous models
             return (g, d)
         } else {
-            let generator = Generator(channels: Config.baseChannels)
-            let discriminator = Discriminator(channels: Config.baseChannels)
+            let generator = Generator(channels: config.baseChannels)
+            let discriminator = Discriminator(channels: config.baseChannels)
             return (generator, discriminator)
         }
     }
@@ -47,7 +49,7 @@ struct ModelStack {
     }
     
     func sampleNoise(for size: Size, noiseScale: Float) -> Tensor<Float> {
-        switch Config.noisePadding {
+        switch config.noisePadding {
         case .zero:
             let noise = Tensor<Float>(randomNormal: [1, size.height, size.width, 1]) * noiseScale
             return zeroPad(noise)

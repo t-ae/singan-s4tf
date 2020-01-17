@@ -1,29 +1,29 @@
 import Foundation
 
-enum Config {
+struct Config: Codable {
     // network params
-    static let baseChannels = 32
+    let baseChannels: Int
     
     // pyramid params
-    static let scaleFactor: Float = 0.75
-    static let imageMinSize = 20
-    static let imageMaxSize = 250
+    let scaleFactor: Float
+    let imageMinSize: Int
+    let imageMaxSize: Int
     
     // training params
-    static let trainEpochsPerLayer = 5000
-    static let nDisUpdate = 1
-    static let alpha: Float = 30
-    static let gamma: Float = 0.1
-    static let noiseScaleBase: Float = 0.1
-    static let noisePadding: NoisePadding = .noise
+    let trainEpochsPerLayer: Int
+    let nDisUpdate: Int
+    let alpha: Float
+    let gamma: Float
+    let noiseScaleBase: Float
+    let noisePadding: NoisePadding
     
     // test configuration
-    static let superResolutionIter = 5
+    let superResolutionIter: Int
     
     // plot configuration
-    static let tensorBoardLogDir = URL(fileURLWithPath: "./logdir")
+    let tensorBoardLogDir: URL
 }
 
-enum NoisePadding {
+enum NoisePadding: String, Codable {
     case zero, noise
 }

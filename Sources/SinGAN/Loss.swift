@@ -1,7 +1,6 @@
 import TensorFlow
 
 protocol GANLoss {
-    var name: String { get }
     @differentiable
     func lossG(_ tensor: Tensor<Float>) -> Tensor<Float>
     
@@ -57,6 +56,8 @@ protocol ReconstructionLoss {
 }
 
 struct MSELoss: ReconstructionLoss {
+    let name = "MSE"
+    
     @differentiable(wrt: fake)
     func callAsFunction(real: Tensor<Float>, fake: Tensor<Float>) -> Tensor<Float> {
         meanSquaredError(predicted: fake, expected: real)
@@ -64,6 +65,8 @@ struct MSELoss: ReconstructionLoss {
 }
 
 struct BCELoss: ReconstructionLoss {
+    let name = "BCE"
+    
     @differentiable(wrt: fake)
     func callAsFunction(real: Tensor<Float>, fake: Tensor<Float>) -> Tensor<Float> {
         // [0,1] range
