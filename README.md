@@ -6,6 +6,9 @@
 
 ## Run
 
+I recommend to use this Dockerfile.
+https://github.com/t-ae/s4tf-docker
+
 [Swift for TensorFlow](https://github.com/tensorflow/swift) is required.
 
 ```bash
