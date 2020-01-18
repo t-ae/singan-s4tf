@@ -6,10 +6,10 @@
 
 ## Run
 
+[Swift for TensorFlow](https://github.com/tensorflow/swift) and some python dependencies are required.
+
 I recommend to use this Dockerfile.
 https://github.com/t-ae/s4tf-docker
-
-[Swift for TensorFlow](https://github.com/tensorflow/swift) is required.
 
 ```bash
 $ swift run -c release SinGAN Input/ballons.png
