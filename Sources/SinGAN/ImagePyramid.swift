@@ -43,7 +43,7 @@ struct ImagePyramid {
     }
     
     static func load(file: URL, config: Config) throws -> ImagePyramid {
-        let baseImage = try Image<RGB, Float>(contentsOf: file)
+        let baseImage = try Image<RGBA, Float>(contentsOf: file).toRGB()
         
         // keep aspect ratio
         let maxSize = Size(width: baseImage.width, height: baseImage.height)
