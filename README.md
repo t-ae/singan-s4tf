@@ -4,6 +4,20 @@
 - [Supplementary Material](http://openaccess.thecvf.com/content_ICCV_2019/supplemental/Shaham_SinGAN_Learning_a_ICCV_2019_supplemental.pdf)
 - Offiicial implementation: [tamarott/SinGAN](https://github.com/tamarott/SinGAN)
 
+## Run
+
+[Swift for TensorFlow](https://github.com/tensorflow/swift) is required.
+
+```bash
+$ swift run -c release SinGAN Input/ballons.png
+```
+
+TensorBoard log will be generated under `logdir`.
+
+```bash
+$ tensorboard --logdir logdir/
+```
+
 ## Differences from original
 
 ### Instance norm instead of batch norm
