@@ -11,7 +11,7 @@ let config = Config(
     imageMaxSize: 250,
     trainEpochsPerLayer: 5000,
     nDisUpdate: 1,
-    alpha: 20,
+    alpha: 10,
     gamma: 0.1,
     noiseScaleBase: 0.1,
     noisePadding: .zero,
