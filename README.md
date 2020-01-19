@@ -6,10 +6,13 @@
 
 ## Run
 
-[Swift for TensorFlow](https://github.com/tensorflow/swift) and some python dependencies are required.
+[Swift for TensorFlow](https://github.com/tensorflow/swift) and some python dependencies are required.  
+It's not trainable with latest release v0.6.0 due to its AD bug. Use development snapshot.
 
-I recommend to use this Dockerfile.
+I recommend this Dockerfile:  
 https://github.com/t-ae/s4tf-docker
+
+### Commands
 
 ```bash
 $ swift run -c release SinGAN Input/ballons.png
@@ -20,6 +23,23 @@ TensorBoard log will be generated under `logdir`.
 ```bash
 $ tensorboard --logdir logdir/
 ```
+
+## Example
+
+### Super resolution
+
+|  Original  |  SR  |
+| ---- | ---- |
+|  ![33039_LR](https://user-images.githubusercontent.com/12446914/72676461-d9d03480-3ad4-11ea-8fd0-55beb75ddde9.png)  |  ![super_resolution5](https://user-images.githubusercontent.com/12446914/72676479-06844c00-3ad5-11ea-9845-f1d864837e1c.png)  |
+
+### Multiple sizes
+
+![multisize_181x181](https://user-images.githubusercontent.com/12446914/72676495-29aefb80-3ad5-11ea-9f16-e90c673a3a6b.png)
+![multisize_181x369](https://user-images.githubusercontent.com/12446914/72676496-29aefb80-3ad5-11ea-8dfd-bab322a940f0.png)
+![multisize_293x181](https://user-images.githubusercontent.com/12446914/72676497-2a479200-3ad5-11ea-980d-8b12b6cd40c3.png)
+![multisize_592x181](https://user-images.githubusercontent.com/12446914/72676498-2a479200-3ad5-11ea-81f0-5d2d0a21881c.png)
+
+More examples in [Results directory](https://github.com/t-ae/singan-s4tf/tree/master/Results).
 
 ## Differences from original
 
