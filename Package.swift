@@ -6,6 +6,7 @@ import PackageDescription
 let package = Package(
     name: "SinGAN",
     dependencies: [
+        .package(url: "https://github.com/t-ae/gan-utils-s4tf.git", from: "0.1.2"),
         .package(url: "https://github.com/t-ae/swim.git", from: "3.7.0"),
         .package(url: "https://github.com/t-ae/tensorboardx-s4tf.git", from: "0.0.10"),
     ],
@@ -14,7 +15,7 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "SinGAN",
-            dependencies: ["Swim", "TensorBoardX"]),
+            dependencies: ["GANUtils", "Swim", "TensorBoardX"]),
         .testTarget(
             name: "SinGANTests",
             dependencies: ["SinGAN"]),

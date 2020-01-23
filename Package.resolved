@@ -2,6 +2,15 @@
   "object": {
     "pins": [
       {
+        "package": "GANUtils",
+        "repositoryURL": "https://github.com/t-ae/gan-utils-s4tf.git",
+        "state": {
+          "branch": null,
+          "revision": "8b7c7320cdec7835c1384e8aa69adda1dcff2161",
+          "version": "0.1.2"
+        }
+      },
+      {
         "package": "Swim",
         "repositoryURL": "https://github.com/t-ae/swim.git",
         "state": {

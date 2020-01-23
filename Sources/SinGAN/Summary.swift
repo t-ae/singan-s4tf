@@ -1,4 +1,5 @@
 import TensorBoardX
+import GANUtils
 
 extension SNConv2D: HistogramWritable where Scalar == Float {
     public func writeHistograms(tag: String, writer: SummaryWriter, globalStep: Int?) {

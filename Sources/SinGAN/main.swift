@@ -1,5 +1,6 @@
 import Foundation
 import TensorFlow
+import GANUtils
 import TensorBoardX
 
 Context.local.randomSeed = (42, 42)
@@ -28,8 +29,8 @@ print("Image: \(imageURL)")
 let reals = try ImagePyramid.load(file: imageURL, config: config)
 
 var modelStack = ModelStack(config: config)
-let ganLossCriterion = GANLoss(type: config.ganLoss)
-let recLossCriterion = ReconstructionLoss(type: config.recLoss)
+let ganLossCriterion = GANLoss(config.ganLoss)
+let recLossCriterion = ReconstructionLoss(config.recLoss)
 
 let writer = SummaryWriter(logdir: URL(fileURLWithPath: "./logdir/\(imageURL.deletingPathExtension().lastPathComponent)"))
 writer.addText(tag: "sizes", text: String(describing: reals.sizes))

@@ -1,9 +1,9 @@
 import TensorFlow
-import TensorBoardX
+import GANUtils
 
 struct ConvBlock: Layer {
     var conv: SNConv2D<Float>
-    var norm: InstanceNorm2D<Float>
+    var norm: InstanceNorm<Float>
     
     @noDerivative
     let enableNorm: Bool
@@ -15,7 +15,7 @@ struct ConvBlock: Layer {
         self.conv = SNConv2D(Conv2D(filterShape: (3, 3, inputChannels, outputChannels),
                                     filterInitializer: heNormal()),
                              enabled: enableSpectralNorm)
-        self.norm = InstanceNorm2D(featureCount: outputChannels)
+        self.norm = InstanceNorm(featureCount: outputChannels)
         self.enableNorm = enableNorm
     }
     
