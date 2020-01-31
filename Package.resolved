@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/t-ae/gan-utils-s4tf.git",
         "state": {
           "branch": null,
-          "revision": "8b7c7320cdec7835c1384e8aa69adda1dcff2161",
-          "version": "0.1.2"
+          "revision": "d7f403ce8bc656a25dcfcee0eb3e3cda1d87b6ac",
+          "version": "0.1.6"
         }
       },
       {
@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/t-ae/tensorboardx-s4tf.git",
         "state": {
           "branch": null,
-          "revision": "8fa72b632e4718de34bffbe3746aa90ec978f5be",
-          "version": "0.0.10"
+          "revision": "9c4200c4b3c031fba2d4aa1d4d42c9fa52d2cc55",
+          "version": "0.1.0"
         }
       }
     ]

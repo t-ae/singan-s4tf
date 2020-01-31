@@ -141,8 +141,8 @@ func trainSingleScale() {
         }
         
         if step % (500 * config.nDisUpdate) == 0 {
-            writer.addHistograms(tag: "\(tag)G/", layer: gen, globalStep: step)
-            writer.addHistograms(tag: "\(tag)D/", layer: disc, globalStep: step)
+            writer.addHistograms(tag: "\(tag)G/", model: gen, globalStep: step)
+            writer.addHistograms(tag: "\(tag)D/", model: disc, globalStep: step)
         }
     }
     
