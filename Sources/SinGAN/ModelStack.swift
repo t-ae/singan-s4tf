@@ -19,8 +19,10 @@ struct ModelStack {
     }
     
     func createNewModels() -> (Generator, Discriminator) {
-        if let g = generators.last, let d = discriminators.last {
+        if var g = generators.last, var d = discriminators.last {
             // Copy of previous models
+            g.refreshParameters()
+            d.refreshParameters()
             return (g, d)
         } else {
             let generator = Generator(channels: config.baseChannels,

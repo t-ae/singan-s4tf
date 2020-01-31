@@ -125,3 +125,11 @@ struct Discriminator: Layer {
         return x
     }
 }
+
+extension Layer {
+    mutating func refreshParameters() {
+        for kp in recursivelyAllWritableKeyPaths(to: Parameter<Float>.self) {
+            self[keyPath: kp] = Parameter(self[keyPath: kp].value)
+        }
+    }
+}
