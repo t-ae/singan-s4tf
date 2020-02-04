@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "SinGAN",
     dependencies: [
-        .package(url: "https://github.com/t-ae/gan-utils-s4tf.git", from: "0.1.6"),
+        .package(url: "https://github.com/t-ae/gan-utils-s4tf.git", from: "0.1.8"),
         .package(url: "https://github.com/t-ae/swim.git", from: "3.7.0"),
         .package(url: "https://github.com/t-ae/tensorboardx-s4tf.git", from: "0.1.0"),
     ],
