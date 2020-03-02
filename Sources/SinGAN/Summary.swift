@@ -3,8 +3,8 @@ import GANUtils
 
 extension SNConv2D: HistogramWritable where Scalar == Float {
     public func writeHistograms(tag: String, writer: SummaryWriter, globalStep: Int?) {
-        writer.addHistogram(tag: "\(tag).filter", values: conv.filter, globalStep: globalStep)
-        writer.addHistogram(tag: "\(tag).bias", values: conv.bias, globalStep: globalStep)
+        writer.addHistogram(tag: "\(tag).filter", values: filter, globalStep: globalStep)
+        writer.addHistogram(tag: "\(tag).bias", values: bias, globalStep: globalStep)
     }
 }
 

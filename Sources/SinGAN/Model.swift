@@ -12,9 +12,9 @@ struct ConvBlock: Layer {
          outputChannels: Int,
          enableSpectralNorm: Bool = true,
          enableNorm: Bool = true) {
-        self.conv = SNConv2D(Conv2D(filterShape: (3, 3, inputChannels, outputChannels),
-                                    filterInitializer: heNormal()),
-                             enabled: enableSpectralNorm)
+        self.conv = SNConv2D(filterShape: (3, 3, inputChannels, outputChannels),
+                             spectralNormalizationEnabled: enableSpectralNorm,
+                             filterInitializer: heNormal())
         self.norm = InstanceNorm(featureCount: outputChannels)
         self.enableNorm = enableNorm
     }
@@ -66,9 +66,9 @@ struct Generator: Layer {
         self.conv3 = ConvBlock(inputChannels: channels, outputChannels: channels,
                                enableSpectralNorm: enableSN,
                                enableNorm: enableNorm)
-        self.tail = SNConv2D(Conv2D(filterShape: (3, 3, channels, 3),
-                                    filterInitializer: heNormal()),
-                             enabled: enableSN)
+        self.tail = SNConv2D(filterShape: (3, 3, channels, 3),
+                             spectralNormalizationEnabled: enableSN,
+                             filterInitializer: heNormal())
     }
 
     @differentiable
@@ -109,9 +109,9 @@ struct Discriminator: Layer {
         self.conv3 = ConvBlock(inputChannels: channels, outputChannels: channels,
                                enableSpectralNorm: enableSN,
                                enableNorm: enableNorm)
-        self.tail = SNConv2D(Conv2D(filterShape: (3, 3, channels, 1),
-                                    filterInitializer: heNormal()),
-                             enabled: enableSN)
+        self.tail = SNConv2D(filterShape: (3, 3, channels, 1),
+                             spectralNormalizationEnabled: enableSN,
+                             filterInitializer: heNormal())
     }
     
     @differentiable
